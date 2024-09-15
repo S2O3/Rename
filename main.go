@@ -5,6 +5,8 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	"github.com/iancoleman/strcase"
 )
 
 func main() {
@@ -21,10 +23,12 @@ func DoCommand(args []string) {
 	}
 	from := args[0]
 	to := args[1]
-	fmt.Printf("from: %s\nto: %s\n", from, to)
 
 	if to[0] == '.' {
 		DoRenameExt(from, to)
+		return
+	} else if to[0] == ':' {
+		DoTransform(from, to)
 		return
 	}
 
@@ -38,7 +42,7 @@ func DoCommand(args []string) {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	} else {
-		fmt.Println("Rename success")
+		fmt.Printf("Rename success: %s -> %s\n", from, newname)
 	}
 }
 
@@ -51,6 +55,7 @@ func ShowHelp() {
 func DoRenameExt(from, to string) {
 	dir := path.Dir(from)
 	basename := path.Base(from)
+	//if name is music.mp3 then filename is music and ext is .mp3
 	filename := strings.Split(basename, ".")[0]
 	newext := to
 	newname := dir + "/" + filename + newext
@@ -58,6 +63,39 @@ func DoRenameExt(from, to string) {
 		fmt.Println("Error:", err)
 		os.Exit(2)
 	} else {
-		fmt.Println("Rename success")
+		fmt.Printf("Rename success: %s -> %s\n", from, newname)
+	}
+}
+
+func DoTransform(from, to string) {
+	dir := path.Dir(from)
+	basename := path.Base(from)
+	filename := strings.Split(basename, ".")[0]
+	ext := path.Ext(basename)
+	switch to {
+	case ":upper":
+		filename = strings.ToUpper(filename)
+	case ":lower":
+		filename = strings.ToLower(filename)
+	case ":camel":
+		filename = strcase.ToCamel(filename)
+	case ":snake":
+		filename = strcase.ToSnake(filename)
+	case ":kebab":
+		filename = strcase.ToKebab(filename)
+	case ":camel_lower":
+		filename = strcase.ToLowerCamel(filename)
+
+	default:
+		fmt.Println("Unknown transform:", to)
+		os.Exit(3)
+	}
+
+	newname := dir + "/" + filename + ext
+	if err := os.Rename(from, newname); err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(3)
+	} else {
+		fmt.Printf("Rename success: %s -> %s\n", from, newname)
 	}
 }
