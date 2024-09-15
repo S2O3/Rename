@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 )
 
 func main() {
@@ -22,6 +23,11 @@ func DoCommand(args []string) {
 	to := args[1]
 	fmt.Printf("from: %s\nto: %s\n", from, to)
 
+	if to[0] == '.' {
+		DoRenameExt(from, to)
+		return
+	}
+
 	//do: rename /tmp/a.mp3 b
 	//will rename /tmp/a.mp3 to /tmp/b.mp3
 	dir := path.Dir(from)
@@ -38,4 +44,20 @@ func DoCommand(args []string) {
 
 func ShowHelp() {
 	fmt.Println("Usage:$ rename [from] [to] [options...]")
+}
+
+// do: rename /tmp/a.mp3 .txt
+// will rename /tmp/a.mp3 to /tmp/a.txt
+func DoRenameExt(from, to string) {
+	dir := path.Dir(from)
+	basename := path.Base(from)
+	filename := strings.Split(basename, ".")[0]
+	newext := to
+	newname := dir + "/" + filename + newext
+	if err := os.Rename(from, newname); err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(2)
+	} else {
+		fmt.Println("Rename success")
+	}
 }
