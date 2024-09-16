@@ -4,3 +4,4 @@
 justfile
 /.empty
 /a.txt
+/README.md
