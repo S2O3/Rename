@@ -12,7 +12,7 @@ rename 是一个简单而强大的命令行工具，用于重命名文件和目�
 
 确保您已安装Go语言环境，然后运行以下命令：
 ```bash
-git clone https://github.com/S2O3/Rename.git
+git clone https://github.com/YochumH/Rename.git
 cd Rename
 go build -o rename
 ```
