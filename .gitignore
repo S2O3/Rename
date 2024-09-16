@@ -1,7 +1,7 @@
 /tmp
 /.bash_profile
 /.obsidian
-justfile
+/justfile
 /.empty
 /a.txt
 /README.md
