@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -18,22 +19,49 @@ func DoCommand(args []string) {
 		ShowHelp()
 		return
 	}
-	from := args[0]
-	to := args[1]
+	from := args[0 : len(args)-1]
+	to := args[len(args)-1]
+	if args[len(args)-2] == ":plus" {
+		from = from[:len(from)-1]
+		to = args[len(args)-2]
+	}
 	var newName string
-	if to[0] == '.' {
-		newName = DoRenameExt(from, to)
-	} else if to[0] == ':' {
-		newName = DoTransform(from, to, args)
-	} else {
-		newName = DoRename(from, to)
+	count := 0
+	if len(from) != 1 && to != ":upper" && to != ":lower" && to != ":camel" && to != ":snake" && to != ":kebab" && to != ":plus" {
+		fmt.Printf("Attention: you are renaming %d files.\n", len(from))
+		fmt.Printf("Some files may be merged into one.\n")
+		fmt.Printf("Still continue?[y/n]:")
+		input := ""
+		fmt.Scanln(&input)
+		if input == "n" {
+			fmt.Println("Rename cancelled")
+			return
+		}
 	}
-	if err := os.Rename(from, newName); err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	} else {
-		fmt.Printf("Rename success: %s -> %s\n", from, newName)
+	for _, f := range from {
+		if to[0] == '.' {
+			newName = DoRenameExt(f, to)
+		} else if to[0] == ':' {
+			newName = DoTransform(f, to, args[len(args)-1])
+		} else {
+			newName = DoRename(f, to)
+		}
+		// check if newName already exists
+		if fileExists(newName) && to != ":upper" && to != ":lower" {
+			fmt.Printf("Error: Target file '%s' already exists\n%d files have been renamed", newName, count)
+			return
+		}
+
+		//check if name is already changed
+		if err := os.Rename(f, newName); err != nil {
+			fmt.Println("Error:", err)
+			os.Exit(2)
+			return
+		}
+		count++
 	}
+
+	fmt.Printf("Rename success %d files\n", count)
 
 }
 
@@ -53,7 +81,25 @@ func DoRenameExt(from, to string) string {
 	return newname
 }
 
-func DoTransform(from, to string, args []string) string {
+// do: rename a.mp3 :upper
+// will rename a.mp3 to A.mp3
+
+// do: rename A.mp3 :lower
+// will rename A.mp3 to a.mp3
+
+// do: rename abc_def :camel
+// will rename abc_def.mp3 to AbcDef.mp3
+
+// do: rename AbcDef :snake
+// will rename AbcDef.mp3 to abc_def.mp3
+
+// do: rename abc_def :kebab
+// will rename abc_def.mp3 to abc-def.mp3
+
+// do: rename abc_def.mp3 :plus _g
+// will rename abc_def.mp3 to abc_def_g.mp3
+
+func DoTransform(from, to string, plus string) string {
 	dir := path.Dir(from)
 	basename := path.Base(from)
 	filename := strings.Split(basename, ".")[0]
@@ -69,10 +115,9 @@ func DoTransform(from, to string, args []string) string {
 		filename = strcase.ToSnake(filename)
 	case ":kebab":
 		filename = strcase.ToKebab(filename)
-	case ":camel_lower":
-		filename = strcase.ToLowerCamel(filename)
 	case ":plus":
-		filename = filename + args[2]
+		filename = filename + plus
+
 	default:
 		fmt.Println("Unknown transform:", to)
 		os.Exit(3)
@@ -83,12 +128,34 @@ func DoTransform(from, to string, args []string) string {
 
 }
 
+// do: rename /tmp/a.mp3 b
+// will rename /tmp/a.mp3 to /tmp/b.mp3
 func DoRename(from, to string) string {
-	//do: rename /tmp/a.mp3 b
-	//will rename /tmp/a.mp3 to /tmp/b.mp3
 	dir := path.Dir(from)
 	basename := path.Base(from)
 	ext := path.Ext(basename)
 	newname := dir + "/" + to + ext
 	return newname
+}
+
+func fileExists(path string) bool {
+	_, err := os.Lstat(path)
+	if err == nil {
+		return true
+	}
+	if os.IsNotExist(err) {
+		// 检查目录中是否存在同名文件（忽略大小写）
+		dir := filepath.Dir(path)
+		base := filepath.Base(path)
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			return false
+		}
+		for _, entry := range entries {
+			if strings.EqualFold(entry.Name(), base) {
+				return true
+			}
+		}
+	}
+	return false
 }
