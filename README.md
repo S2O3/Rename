@@ -8,11 +8,13 @@ rename 是一个简单而强大的命令行工具，用于重命名文件和目�
 - 转换文件名格式（大写、小写、驼峰式、蛇形式、烤串式等）
 - 简单重命名
 
-## 安装
+## 编译
 
 确保您已安装Go语言环境，然后运行以下命令：
 ```bash
-go get github.com/S2O3/rename
+git clone https://github.com/S2O3/Rename.git
+cd Rename
+go build -o rename
 ```
 
 
@@ -20,7 +22,7 @@ go get github.com/S2O3/rename
 
 基本语法：
 ```bash
-rename [from] [to] [options...]
+./rename [from] [to] [options...]
 ```
 
 ### 示例
